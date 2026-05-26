@@ -1,12 +1,8 @@
-# TODO - File server (GET/POST file transfer)
+# TODO
+- [ ] Update POST /file so that the request body can specify overwrite/append via a flag/mode and write corresponding data.
+- [ ] Ensure overwrite vs append is determined from the request body (JSON field like `{ "mode": "append" }`) while still supporting existing query param `mode` for backward compatibility.
+- [ ] For JSON body uploads, use `{ "mode": "append|overwrite", "data": "..." }` where `data` becomes the file bytes.
 
-- [x] Create implementation in `server.js` (Node + Express)
-- [x] GET `/file?name=<filename>`: stream file from server storage directory
-- [x] POST `/file?name=<filename>`: receive raw request body as chunks and write to disk (stream)
-- [x] Ensure no authentication is required
-
-- [ ] Handle content-length, timeouts, and basic validation (filename/path traversal)
-- [ ] Add minimal error handling and proper HTTP status codes
-- [ ] Update/verify `Dockerfile`/`docker-compose.yml` compatibility with storage directory
-- [ ] Run `npm test` or basic start smoke-test
+- [ ] Verify dedicated append route `POST /file/append` matches the same behavior.
+- [ ] Run a quick manual test (curl) to confirm overwrite replaces and append adds.
 
