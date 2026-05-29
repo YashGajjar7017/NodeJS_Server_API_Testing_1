@@ -40,6 +40,7 @@ function safeFilePath(filename) {
     return path.join(UPLOAD_DIR, safeName);
 }
 
+// GET /file?name=filename - download a file
 app.get('/file', async (req, res) => {
     try {
         const name = req.query.name;
@@ -65,6 +66,7 @@ app.get('/file', async (req, res) => {
     }
 });
 
+// This endpoint supports both overwrite and append modes. The mode can be specified via query (?mode=append|overwrite) or in the JSON body ({"mode": "append"}). If not specified, it defaults to overwrite.
 app.post('/file', async (req, res) => {
     try {
         const name = req.query.name;
@@ -175,10 +177,7 @@ app.post('/file', async (req, res) => {
     }
 });
 
-
-
-
-
+// New endpoint to append to an existing file. If the file doesn't exist, it will be created.
 app.post('/file/append', async (req, res) => {
     try {
         const name = req.query.name;
@@ -229,6 +228,89 @@ app.post('/file/append', async (req, res) => {
     }
 });
 
+// New endpoint to list files with metadata (size and modified time)
+app.get('/files', async (req, res) => {
+    try {
+        ensureStorageDir();
+        const files = fs.readdirSync(UPLOAD_DIR).filter((f) => {
+            const fullPath = path.join(UPLOAD_DIR, f);
+            return fs.statSync(fullPath).isFile();
+        }).map((f) => {
+            const fullPath = path.join(UPLOAD_DIR, f);
+            const stat = fs.statSync(fullPath);
+            return { filename: f, size: stat.size, modified: stat.mtime };
+        });
+        res.json({ files });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// New endpoint to delete a file by name
+app.delete('/file', async (req, res) => {
+    try {
+        const name = req.query.name;
+        const filePath = safeFilePath(name);
+        if (!filePath) return res.status(400).json({ error: 'Invalid filename' });
+        ensureStorageDir();
+
+        if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+        fs.unlinkSync(filePath);
+        res.json({ ok: true, filename: path.basename(filePath) });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+// New endpoint to get metadata of a single file
+
+app.get('/file/metadata', async (req, res) => {
+    try {
+        const name = req.query.name;
+        const filePath = safeFilePath(name);
+        if (!filePath) return res.status(400).json({ error: 'Invalid filename' });
+        ensureStorageDir();
+        if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+
+        const stat = fs.statSync(filePath);
+        res.json({ filename: path.basename(filePath), size: stat.size, modified: stat.mtime });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Handle OPTIONS for CORS preflight
+app.options('/file', (req, res) => {
+    res.setHeader('Allow', 'GET,POST,DELETE,OPTIONS');
+    res.status(204).end();
+});
+
+// For simplicity, we allow CORS from any origin. In production, you might want to restrict this.
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
+    }
+    next();
+});
+
+app.get('/files/metadata', async (req, res) => {
+    try {
+        ensureStorageDir();
+        const files = fs.readdirSync(UPLOAD_DIR).filter((f) => {
+            const fullPath = path.join(UPLOAD_DIR, f);
+            return fs.statSync(fullPath).isFile();
+        }).map((f) => {
+            const fullPath = path.join(UPLOAD_DIR, f);
+            const stat = fs.statSync(fullPath);
+            return { filename: f, size: stat.size, modified: stat.mtime };
+        });
+        res.json({ files });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 app.get('/health', (req, res) => {
     res.json({ ok: true });
