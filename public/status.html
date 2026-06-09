@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Storage Server Status</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      min-height: 100vh;
+      background: radial-gradient(circle at top left, rgba(130, 72, 255, 0.25), transparent 35%),
+                  radial-gradient(circle at bottom right, rgba(3, 218, 197, 0.22), transparent 30%),
+                  linear-gradient(135deg, #090b18 0%, #111827 100%);
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+    .panel {
+      width: min(1100px, 100%);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 28px;
+      backdrop-filter: blur(18px);
+      background: rgba(15, 23, 42, 0.84);
+      box-shadow: 0 28px 70px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    header {
+      padding: 28px 32px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(168, 85, 247, 0.14));
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 2.75vw, 3rem);
+      letter-spacing: -0.04em;
+    }
+    p.subtitle {
+      margin: 8px 0 0;
+      color: #cbd5e1;
+      max-width: 740px;
+      line-height: 1.7;
+    }
+    .grid {
+      display: grid;
+      gap: 22px;
+      padding: 32px;
+    }
+    .card {
+      border-radius: 22px;
+      background: rgba(15, 23, 42, 0.82);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), transparent 38%);
+      pointer-events: none;
+    }
+    .card h2 {
+      margin: 0 0 16px;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+    .status-item {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .status-item dt {
+      color: #94a3b8;
+      font-size: 0.92rem;
+    }
+    .status-item dd {
+      margin: 0;
+      color: #fff;
+      font-weight: 600;
+    }
+    .file-list {
+      width: 100%;
+      border-collapse: collapse;
+      color: #e2e8f0;
+    }
+    .file-list th,
+    .file-list td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    }
+    .file-list th {
+      color: #94a3b8;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.78rem;
+    }
+    .file-list tbody tr:hover {
+      background: rgba(255,255,255,0.03);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(34,197,94,0.14);
+      color: #d1fae5;
+      font-size: 0.95rem;
+    }
+    .badge.offline {
+      background: rgba(248, 113, 113, 0.16);
+      color: #fee2e2;
+    }
+    .animated-ring {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.25);
+      border-top-color: #60a5fa;
+      border-radius: 999px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .empty-state {
+      color: #94a3b8;
+      padding: 18px 16px;
+      border-radius: 18px;
+      background: rgba(148,163,184,0.08);
+    }
+    @media (min-width: 900px) {
+      .grid { grid-template-columns: 1.2fr 0.8fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <header>
+      <h1>Storage Server Control Panel</h1>
+      <p class="subtitle">Live status, storage visibility, SSL readiness, CORS origin checks, and file list preview. This page is built with animated glassy gradients and real server telemetry.</p>
+    </header>
+    <div class="grid">
+      <div class="card">
+        <h2>Server health</h2>
+        <dl class="status-item">
+          <dt>Connection</dt><dd id="connection">Loading…</dd>
+          <dt>Hosted</dt><dd id="hosted">Loading…</dd>
+          <dt>Started</dt><dd id="started">Loading…</dd>
+          <dt>Uptime</dt><dd id="uptime">Loading…</dd>
+          <dt>Storage path</dt><dd id="storagePath">Loading…</dd>
+          <dt>Files counted</dt><dd id="fileCount">Loading…</dd>
+          <dt>Total size</dt><dd id="totalSize">Loading…</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h2>Quick actions</h2>
+        <p class="empty-state">Use your API client to upload or download files from <code>/file</code>, manage chunks with <code>/file/chunk</code>, and list storage from <code>/files</code>.</p>
+        <div class="badge" id="statusBadge"><span class="animated-ring"></span><span>Checking server...</span></div>
+      </div>
+      <div class="card" style="grid-column: span 2;">
+        <h2>Storage files</h2>
+        <table class="file-list">
+          <thead>
+            <tr><th>Filename</th><th>Size</th><th>Last modified</th></tr>
+          </thead>
+          <tbody id="fileTableBody">
+            <tr><td colspan="3">Loading files…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script>
+    const formatBytes = (bytes) => {
+      if (bytes === 0) return '0 B';
+      const sizes = ['B','KB','MB','GB','TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+    };
+
+    const toLocalString = (value) => new Date(value).toLocaleString();
+
+    async function refresh() {
+      const statusBadge = document.getElementById('statusBadge');
+      try {
+        const statusRes = await fetch('/api/status');
+        if (!statusRes.ok) throw new Error('Status fetch failed');
+        const status = await statusRes.json();
+
+        document.getElementById('connection').textContent = location.protocol === 'https:' ? 'Secure HTTPS' : 'HTTP';
+        document.getElementById('hosted').textContent = status.hosted ? 'Yes' : 'No';
+        document.getElementById('started').textContent = toLocalString(status.startedAt);
+        document.getElementById('uptime').textContent = `${Math.floor(status.uptimeMs / 1000)} sec`;
+        document.getElementById('storagePath').textContent = status.storageDir;
+        document.getElementById('fileCount').textContent = status.fileCount;
+        document.getElementById('totalSize').textContent = formatBytes(status.totalSize);
+        statusBadge.classList.remove('offline');
+        statusBadge.innerHTML = '<span class="animated-ring"></span><span>Server online</span>';
+      } catch (error) {
+        statusBadge.classList.add('offline');
+        statusBadge.innerHTML = '<span class="animated-ring"></span><span>Offline or unreachable</span>';
+      }
+
+      try {
+        const filesRes = await fetch('/files');
+        if (!filesRes.ok) throw new Error('File list failed');
+        const { files } = await filesRes.json();
+        const body = document.getElementById('fileTableBody');
+        body.innerHTML = files.length
+          ? files.map(file => `
+              <tr>
+                <td>${file.filename}</td>
+                <td>${formatBytes(file.size)}</td>
+                <td>${toLocalString(file.modified)}</td>
+              </tr>
+            `).join('')
+          : '<tr><td colspan="3">No files found in storage.</td></tr>';
+      } catch (error) {
+        const body = document.getElementById('fileTableBody');
+        body.innerHTML = '<tr><td colspan="3">Unable to load files.</td></tr>';
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 12000);
+  </script>
+</body>
+</html>

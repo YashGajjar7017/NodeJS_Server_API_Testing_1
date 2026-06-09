@@ -20,11 +20,11 @@
   "license": "MIT",
   "author": "File Server Developer",
   "type": "commonjs",
-  "main": "server.js",
+  "main": "Server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "prod": "pm2 start server.js --name file-server",
+    "start": "node Server.js",
+    "dev": "nodemon Server.js",
+    "prod": "pm2 start Server.js --name file-server",
     "test": "jest",
     "lint": "eslint src/",
     "docs": "swagger-cli validate src/swagger.yaml && node src/swagger.js"
