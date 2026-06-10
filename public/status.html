@@ -16,10 +16,10 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 24px;
+      padding: 15px;
     }
     .panel {
-      width: min(1100px, 100%);
+      width: min(90vw, 100%);
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 28px;
       backdrop-filter: blur(18px);
@@ -189,8 +189,8 @@
     async function refresh() {
       const statusBadge = document.getElementById('statusBadge');
       try {
-        const statusRes = await fetch('/api/status');
-        if (!statusRes.ok) throw new Error('Status fetch failed');
+        const statusRes = await fetch(`${location.origin}/api/status`);
+        if (!statusRes.ok) throw new Error(`Status fetch failed: ${statusRes.status} ${statusRes.statusText}`);
         const status = await statusRes.json();
 
         document.getElementById('connection').textContent = location.protocol === 'https:' ? 'Secure HTTPS' : 'HTTP';
@@ -200,16 +200,27 @@
         document.getElementById('storagePath').textContent = status.storageDir;
         document.getElementById('fileCount').textContent = status.fileCount;
         document.getElementById('totalSize').textContent = formatBytes(status.totalSize);
+
         statusBadge.classList.remove('offline');
         statusBadge.innerHTML = '<span class="animated-ring"></span><span>Server online</span>';
       } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
         statusBadge.classList.add('offline');
-        statusBadge.innerHTML = '<span class="animated-ring"></span><span>Offline or unreachable</span>';
+        statusBadge.innerHTML = `<span class="animated-ring"></span><span>${msg}</span>`;
+
+        // Make the “Loading…” state go away even when fetch fails
+        document.getElementById('connection').textContent = 'Unknown';
+        document.getElementById('hosted').textContent = 'Unknown';
+        document.getElementById('started').textContent = '—';
+        document.getElementById('uptime').textContent = '—';
+        document.getElementById('storagePath').textContent = '—';
+        document.getElementById('fileCount').textContent = '—';
+        document.getElementById('totalSize').textContent = '—';
       }
 
       try {
-        const filesRes = await fetch('/files');
-        if (!filesRes.ok) throw new Error('File list failed');
+        const filesRes = await fetch(`${location.origin}/files`);
+        if (!filesRes.ok) throw new Error(`File list failed: ${filesRes.status} ${filesRes.statusText}`);
         const { files } = await filesRes.json();
         const body = document.getElementById('fileTableBody');
         body.innerHTML = files.length
@@ -222,8 +233,9 @@
             `).join('')
           : '<tr><td colspan="3">No files found in storage.</td></tr>';
       } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
         const body = document.getElementById('fileTableBody');
-        body.innerHTML = '<tr><td colspan="3">Unable to load files.</td></tr>';
+        body.innerHTML = `<tr><td colspan="3">Unable to load files: ${msg}</td></tr>`;
       }
     }
 
