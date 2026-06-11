@@ -12,7 +12,9 @@ dotenv.config();
 
 const fileRoutes = require('./routes/fileRoutes');
 const statusRoutes = require('./routes/statusRoutes');
+const configRoutes = require('./routes/configRoutes');
 const storageService = require('./services/storageService');
+const configService = require('./services/configService');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
@@ -20,11 +22,6 @@ const HOST = process.env.HOST || '0.0.0.0';
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map((value) => value.trim()).filter(Boolean)
   : ['*'];
-const sslEnabled = process.env.HTTPS === '1' || process.env.HTTPS === 'true';
-const sslKeyPath = process.env.SSL_KEY_PATH;
-const sslCertPath = process.env.SSL_CERT_PATH;
-const sslCaPath = process.env.SSL_CA_PATH;
-const requestClientCert = process.env.SSL_REQUEST_CLIENT_CERT === 'true';
 
 function buildCorsOptions() {
   if (allowedOrigins.includes('*')) {
@@ -76,6 +73,7 @@ app.use(express.urlencoded({ extended: false, limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(fileRoutes);
+app.use(configRoutes.router);
 app.use(statusRoutes);
 
 app.use((req, res) => {
@@ -92,27 +90,92 @@ app.use((err, req, res, next) => {
 });
 
 storageService.ensureStorageDir();
+let serverInstance = null;
+let currentHost = HOST;
+let currentPort = PORT;
 
-function startServer() {
-  const server = sslEnabled ? createHttpsServer() : http.createServer(app);
-  server.listen(PORT, HOST, () => {
-    // eslint-disable-next-line no-console
-    console.log(`Storage app listening on ${sslEnabled ? 'https' : 'http'}://${HOST}:${PORT}`);
-    if (sslEnabled) {
-      // eslint-disable-next-line no-console
-      console.log('SSL enabled. Certificates loaded from:', sslCertPath, sslKeyPath);
-      if (sslCaPath) {
-        // eslint-disable-next-line no-console
-        console.log('CA certificate path:', sslCaPath);
+function createHttpsServer() {
+  const config = configService.getConfig();
+  const sslKeyPath = config.sslKeyPath;
+  const sslCertPath = config.sslCertPath;
+  const sslCaPath = config.sslCaPath;
+  const requestClientCert = config.requestClientCert;
+
+  if (!sslKeyPath || !sslCertPath) {
+    throw new Error('SSL key and certificate paths must be configured for HTTPS');
+  }
+
+  const httpsOptions = {
+    key: fs.readFileSync(path.resolve(sslKeyPath)),
+    cert: fs.readFileSync(path.resolve(sslCertPath)),
+  };
+
+  if (sslCaPath) {
+    httpsOptions.ca = fs.readFileSync(path.resolve(sslCaPath));
+    httpsOptions.requestCert = requestClientCert;
+    httpsOptions.rejectUnauthorized = requestClientCert;
+  }
+
+  return https.createServer(httpsOptions, app);
+}
+
+function createServerInstance() {
+  const config = configService.getConfig();
+  return config.useHttps ? createHttpsServer() : http.createServer(app);
+}
+
+async function startServer() {
+  const config = configService.getConfig();
+  currentHost = config.host || HOST;
+  currentPort = config.port || PORT;
+  const server = createServerInstance();
+
+  return new Promise((resolve, reject) => {
+    server.listen(currentPort, currentHost, (err) => {
+      if (err) {
+        return reject(err);
       }
-    }
-    // eslint-disable-next-line no-console
-    console.log(`Storage directory: ${storageService.UPLOAD_DIR}`);
+
+      serverInstance = server;
+      const protocol = config.useHttps ? 'https' : 'http';
+      // eslint-disable-next-line no-console
+      console.log(`Storage app listening on ${protocol}://${currentHost}:${currentPort}`);
+      if (config.useHttps) {
+        // eslint-disable-next-line no-console
+        console.log('SSL enabled. Certificates loaded from:', config.sslCertPath, config.sslKeyPath);
+        if (config.sslCaPath) {
+          // eslint-disable-next-line no-console
+          console.log('CA certificate path:', config.sslCaPath);
+        }
+      }
+      // eslint-disable-next-line no-console
+      console.log(`Storage directory: ${storageService.UPLOAD_DIR}`);
+      resolve(server);
+    });
   });
 }
 
+async function restartServer() {
+  if (serverInstance) {
+    await new Promise((resolve, reject) => {
+      serverInstance.close((err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+    serverInstance = null;
+  }
+  return startServer();
+}
+
+configRoutes.setRestartHandler(restartServer);
+
 if (require.main === module) {
-  startServer();
+  startServer().catch((err) => {
+    // eslint-disable-next-line no-console
+    console.error('Unable to start server:', err);
+    process.exit(1);
+  });
 }
 
 module.exports = app;

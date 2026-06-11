@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const storageService = require('../services/storageService');
 
@@ -32,6 +33,41 @@ router.get('/file', (req, res) => {
   const stream = fs.createReadStream(filePath, { highWaterMark: 1024 * 1024 });
   stream.on('error', () => res.status(500).end());
   stream.pipe(res);
+});
+
+router.get('/file/content', (req, res) => {
+  const filePath = validateFilename(req, res);
+  if (!filePath) return;
+
+  storageService.ensureStorageDir();
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const stat = fs.statSync(filePath);
+    res.json({ filename: req.query.name, content, size: stat.size, modified: stat.mtime });
+  } catch (err) {
+    res.status(500).json({ error: 'Unable to read file content' });
+  }
+});
+
+router.post('/file/save', express.json(), (req, res) => {
+  const filePath = validateFilename(req, res);
+  if (!filePath) return;
+
+  if (!req.body || typeof req.body.content !== 'string') {
+    return res.status(400).json({ error: 'Missing content to save' });
+  }
+
+  storageService.ensureStorageDir();
+
+  try {
+    fs.writeFileSync(filePath, req.body.content, 'utf8');
+    const stat = fs.statSync(filePath);
+    res.json({ ok: true, filename: req.query.name, size: stat.size, modified: stat.mtime });
+  } catch (err) {
+    res.status(500).json({ error: 'Unable to save file content' });
+  }
 });
 
 router.post('/file', (req, res) => {

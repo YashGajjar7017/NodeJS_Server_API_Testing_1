@@ -1,246 +1,693 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Storage Server Status</title>
+  <title>Storage Server Dashboard</title>
   <style>
+    :root {
+      color-scheme: dark;
+      color: #e2e8f0;
+      background: #020617;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-feature-settings: 'cv11' on;
+      font-variation-settings: 'wght' 400;
+      font-synthesis: none;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      font-family: Inter, system-ui, sans-serif;
       min-height: 100vh;
-      background: radial-gradient(circle at top left, rgba(130, 72, 255, 0.25), transparent 35%),
-                  radial-gradient(circle at bottom right, rgba(3, 218, 197, 0.22), transparent 30%),
-                  linear-gradient(135deg, #090b18 0%, #111827 100%);
+      background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.22), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.16), transparent 26%),
+        linear-gradient(180deg, #050816 0%, #060b14 100%);
       color: #f8fafc;
-      display: flex;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 15% 15%, rgba(96, 165, 250, 0.18), transparent 12%),
+        radial-gradient(circle at 85% 20%, rgba(168, 85, 247, 0.14), transparent 14%),
+        radial-gradient(circle at 50% 70%, rgba(34, 197, 94, 0.10), transparent 16%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .background-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(18px);
+      opacity: 0.65;
+      pointer-events: none;
+      z-index: 0;
+      animation: float 14s ease-in-out infinite;
+    }
+
+    .background-orb.one {
+      width: 220px;
+      height: 220px;
+      background: rgba(59, 130, 246, 0.2);
+      top: 8%;
+      left: -40px;
+      animation-delay: 0s;
+    }
+
+    .background-orb.two {
+      width: 180px;
+      height: 180px;
+      background: rgba(168, 85, 247, 0.18);
+      top: 42%;
+      right: -50px;
+      animation-delay: 2s;
+    }
+
+    .background-orb.three {
+      width: 260px;
+      height: 260px;
+      background: rgba(34, 197, 94, 0.14);
+      bottom: 10%;
+      left: 15%;
+      animation-delay: 4s;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translate3d(0, 0, 0);
+      }
+
+      50% {
+        transform: translate3d(20px, -20px, 0);
+      }
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 14px 24px;
+      min-height: 48px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      cursor: pointer;
+      transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    button:hover,
+    button:focus-visible {
+      background: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    button.active {
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+    }
+
+    .nav a {
       justify-content: center;
-      align-items: center;
-      padding: 15px;
+      min-width: 150px;
+      padding: 14px 22px;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+      font-weight: 600;
+      border: 1px solid white;
+      border-radius: 15px;
+      text-decoration: none;
+      color: white;
+      /* background-image: linear-gradient(to right, #b8cbb8 0%, #b8cbb8 0%, #b465da 0%, #cf6cc9 33%, #ee609c 66%, #ee609c 100%); */
+      /* background-image: linear-gradient(to right, #00c6fb 0%, #005bea 100%); */
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(168, 85, 247, 0.95));
+      color: #fff;
+      /* background-image: linear-gradient(to right, #92fe9d 0%, #00c9ff 100%); */
     }
-    .panel {
-      width: min(90vw, 100%);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 28px;
-      backdrop-filter: blur(18px);
-      background: rgba(15, 23, 42, 0.84);
-      box-shadow: 0 28px 70px rgba(0,0,0,0.2);
-      overflow: hidden;
+
+    .nav button {
+      justify-content: center;
+      min-width: 150px;
+      padding: 14px 22px;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: center;
+      font-weight: 600;
+      border: 1px solid white;
     }
-    header {
-      padding: 28px 32px;
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(168, 85, 247, 0.14));
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+
+    .nav button.active {
+      background: rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
     }
-    h1 {
-      margin: 0;
-      font-size: clamp(2rem, 2.75vw, 3rem);
-      letter-spacing: -0.04em;
+
+    .nav button:hover {
+      background: rgba(255, 255, 255, 0.22);
+      transform: none;
     }
-    p.subtitle {
-      margin: 8px 0 0;
-      color: #cbd5e1;
-      max-width: 740px;
-      line-height: 1.7;
-    }
-    .grid {
+
+    .layout {
+      min-height: 100vh;
       display: grid;
-      gap: 22px;
-      padding: 32px;
-    }
-    .card {
-      border-radius: 22px;
-      background: rgba(15, 23, 42, 0.82);
-      border: 1px solid rgba(255,255,255,0.1);
+      grid-template-columns: minmax(260px, 320px) 1fr;
+      gap: 28px;
       padding: 24px;
       position: relative;
-      overflow: hidden;
+      z-index: 1;
     }
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), transparent 38%);
-      pointer-events: none;
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 26px;
+      padding: 30px 26px;
+      border-radius: 28px;
+      background: rgba(15, 23, 42, 0.64);
+      backdrop-filter: blur(26px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 30px 110px rgba(15, 23, 42, 0.28);
     }
-    .card h2 {
-      margin: 0 0 16px;
-      font-size: 1.15rem;
-      letter-spacing: -0.02em;
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
-    .status-item {
+
+    .logo-mark {
+      width: 54px;
+      height: 54px;
       display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .status-item dt {
-      color: #94a3b8;
-      font-size: 0.92rem;
-    }
-    .status-item dd {
-      margin: 0;
+      place-items: center;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(168, 85, 247, 0.9));
+      font-weight: 800;
       color: #fff;
-      font-weight: 600;
+      box-shadow: 0 20px 45px rgba(59, 130, 246, 0.28);
     }
-    .file-list {
-      width: 100%;
-      border-collapse: collapse;
-      color: #e2e8f0;
+
+    .logo h1,
+    .logo p {
+      margin: 0;
     }
-    .file-list th,
-    .file-list td {
-      padding: 14px 16px;
-      text-align: left;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+
+    .nav {
+      display: grid;
+      gap: 12px;
     }
-    .file-list th {
-      color: #94a3b8;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-size: 0.78rem;
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
     }
-    .file-list tbody tr:hover {
-      background: rgba(255,255,255,0.03);
+
+    .panel {
+      padding: 26px;
+      border-radius: 28px;
+      background: rgba(15, 23, 42, 0.42);
+      backdrop-filter: blur(22px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 35px 120px rgba(15, 23, 42, 0.22);
+      min-height: 260px;
     }
-    .badge {
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: clamp(1.65rem, 2vw, 2.15rem);
+    }
+
+    p {
+      margin: 0;
+      color: rgba(226, 232, 240, 0.7);
+      line-height: 1.6;
+    }
+
+    .status-pill {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
+      justify-content: center;
+      padding: 10px 16px;
       border-radius: 999px;
-      background: rgba(34,197,94,0.14);
+      font-size: 0.9rem;
+      background: rgba(34, 197, 94, 0.16);
       color: #d1fae5;
-      font-size: 0.95rem;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      min-width: 96px;
     }
-    .badge.offline {
-      background: rgba(248, 113, 113, 0.16);
+
+    .status-pill.offline {
+      background: rgba(248, 113, 113, 0.18);
       color: #fee2e2;
+      border-color: rgba(248, 113, 113, 0.26);
     }
-    .animated-ring {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255,255,255,0.25);
-      border-top-color: #60a5fa;
-      border-radius: 999px;
-      animation: spin 1s linear infinite;
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+
+    .metric {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 22px;
+      border-radius: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
     }
-    .empty-state {
-      color: #94a3b8;
-      padding: 18px 16px;
+
+    .metric span {
+      display: block;
+      color: rgba(226, 232, 240, 0.7);
+      margin-bottom: 8px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .file-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(255, 255, 255, 0.02);
       border-radius: 18px;
-      background: rgba(148,163,184,0.08);
+      overflow: hidden;
+      margin-bottom: 20px;
     }
-    @media (min-width: 900px) {
-      .grid { grid-template-columns: 1.2fr 0.8fr; }
+
+    .file-table thead {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .file-table th,
+    .file-table td {
+      padding: 16px 18px;
+      text-align: left;
+      color: #e5e7eb;
+    }
+
+    .file-table tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      cursor: pointer;
+      transition: background 200ms ease, transform 200ms ease;
+    }
+
+    .file-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateX(2px);
+    }
+
+    .file-table td {
+      background: rgba(15, 23, 42, 0.55);
+    }
+
+    .file-link {
+      color: #60a5fa;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .file-link:hover {
+      text-decoration: underline;
+    }
+
+    .file-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(15, 23, 42, 0.55);
+      color: #f8fafc;
+      padding: 16px;
+      resize: vertical;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    .footer {
+      padding: 18px 24px;
+      color: rgba(226, 232, 240, 0.65);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.95rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        overflow-x: auto;
+        padding: 18px;
+      }
+
+      .nav {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 10px;
+      }
+
+      .nav button {
+        min-width: 150px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="panel">
-    <header>
-      <h1>Storage Server Control Panel</h1>
-      <p class="subtitle">Live status, storage visibility, SSL readiness, CORS origin checks, and file list preview. This page is built with animated glassy gradients and real server telemetry.</p>
-    </header>
-    <div class="grid">
-      <div class="card">
-        <h2>Server health</h2>
-        <dl class="status-item">
-          <dt>Connection</dt><dd id="connection">Loading…</dd>
-          <dt>Hosted</dt><dd id="hosted">Loading…</dd>
-          <dt>Started</dt><dd id="started">Loading…</dd>
-          <dt>Uptime</dt><dd id="uptime">Loading…</dd>
-          <dt>Storage path</dt><dd id="storagePath">Loading…</dd>
-          <dt>Files counted</dt><dd id="fileCount">Loading…</dd>
-          <dt>Total size</dt><dd id="totalSize">Loading…</dd>
-        </dl>
+  <div class="background-orb one"></div>
+  <div class="background-orb two"></div>
+  <div class="background-orb three"></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="logo">
+        <div class="logo-mark">FS</div>
+        <div>
+          <h1>Server Dashboard</h1>
+          <p style="margin: 4px 0 0; color:#94a3b8; font-size:0.92rem;">Storage + connection control</p>
+        </div>
       </div>
-      <div class="card">
-        <h2>Quick actions</h2>
-        <p class="empty-state">Use your API client to upload or download files from <code>/file</code>, manage chunks with <code>/file/chunk</code>, and list storage from <code>/files</code>.</p>
-        <div class="badge" id="statusBadge"><span class="animated-ring"></span><span>Checking server...</span></div>
+      <div class="nav">
+        <a href="/dashboard" class="active">Overview</a>
+        <a href="/dashboard/files">Files</a>
+        <a href="/dashboard/connection">Connection</a>
+        <a href="/dashboard/vpn">VPN Config</a>
+        <a href="/dashboard/Setting">Server Setting</a>
+        <a href="/dashboard/certificates">Server certificates</a>
       </div>
-      <div class="card" style="grid-column: span 2;">
-        <h2>Storage files</h2>
-        <table class="file-list">
-          <thead>
-            <tr><th>Filename</th><th>Size</th><th>Last modified</th></tr>
-          </thead>
-          <tbody id="fileTableBody">
-            <tr><td colspan="3">Loading files…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  <script>
-    const formatBytes = (bytes) => {
-      if (bytes === 0) return '0 B';
-      const sizes = ['B','KB','MB','GB','TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(1024));
-      return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
-    };
-
-    const toLocalString = (value) => new Date(value).toLocaleString();
-
-    async function refresh() {
-      const statusBadge = document.getElementById('statusBadge');
-      try {
-        const statusRes = await fetch(`${location.origin}/api/status`);
-        if (!statusRes.ok) throw new Error(`Status fetch failed: ${statusRes.status} ${statusRes.statusText}`);
-        const status = await statusRes.json();
-
-        document.getElementById('connection').textContent = location.protocol === 'https:' ? 'Secure HTTPS' : 'HTTP';
-        document.getElementById('hosted').textContent = status.hosted ? 'Yes' : 'No';
-        document.getElementById('started').textContent = toLocalString(status.startedAt);
-        document.getElementById('uptime').textContent = `${Math.floor(status.uptimeMs / 1000)} sec`;
-        document.getElementById('storagePath').textContent = status.storageDir;
-        document.getElementById('fileCount').textContent = status.fileCount;
-        document.getElementById('totalSize').textContent = formatBytes(status.totalSize);
-
-        statusBadge.classList.remove('offline');
-        statusBadge.innerHTML = '<span class="animated-ring"></span><span>Server online</span>';
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        statusBadge.classList.add('offline');
-        statusBadge.innerHTML = `<span class="animated-ring"></span><span>${msg}</span>`;
-
-        // Make the “Loading…” state go away even when fetch fails
-        document.getElementById('connection').textContent = 'Unknown';
-        document.getElementById('hosted').textContent = 'Unknown';
-        document.getElementById('started').textContent = '—';
-        document.getElementById('uptime').textContent = '—';
-        document.getElementById('storagePath').textContent = '—';
-        document.getElementById('fileCount').textContent = '—';
-        document.getElementById('totalSize').textContent = '—';
-      }
-
-      try {
-        const filesRes = await fetch(`${location.origin}/files`);
-        if (!filesRes.ok) throw new Error(`File list failed: ${filesRes.status} ${filesRes.statusText}`);
-        const { files } = await filesRes.json();
-        const body = document.getElementById('fileTableBody');
-        body.innerHTML = files.length
-          ? files.map(file => `
+    </aside>
+    <main class="main">
+      <section class="panel" id="overview">
+        <header>
+          <div>
+            <h2>Overview</h2>
+            <p>Server status, storage health, active protocols, and certificate information.</p>
+          </div>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <button id="refreshButton" style="padding:12px 20px; min-height:44px;">Refresh</button>
+            <div id="overviewBadge" class="status-pill">Loading…</div>
+          </div>
+        </header>
+        <div class="stats-grid">
+          <div class="metric"><span>Server</span><strong
+              id="overviewServer">https://a4cd-171-61-167-48.ngrok-free.app/</strong></div>
+          <div class="metric"><span>Port</span><strong id="overviewPort">3000</strong></div>
+          <div class="metric"><span>Storage folder</span><strong
+              id="overviewPath">/storageDir/files?name="data"</strong></div>
+          <div class="metric"><span>Server URL</span><strong
+              id="overviewUrl">https://a4cd-171-61-167-48.ngrok-free.app/status</strong></div>
+          <div class="metric"><span>Files count</span><strong id="overviewCount">Loading…</strong></div>
+          <div class="metric"><span>Storage size</span><strong id="overviewSize">10 TB</strong></div>
+          <div class="metric"><span>Protocols</span><strong id="overviewProtocols">HTTPS, FTP, TCP, UNZIP</strong></div>
+        </div>
+      </section>
+      <section class="panel" id="files" style="display:none;">
+        <header>
+          <div>
+            <h2>Files</h2>
+            <p>Browse storage and edit file content directly in the portal.</p>
+          </div>
+          <div class="status-pill" id="fileBadge">Ready</div>
+        </header>
+        <div style="overflow-x:auto;">
+          <table class="file-table">
+            <thead>
               <tr>
-                <td>${file.filename}</td>
-                <td>${formatBytes(file.size)}</td>
-                <td>${toLocalString(file.modified)}</td>
+                <th>Filename</th>
+                <th>Size</th>
+                <th>Modified</th>
+                <th>Action</th>
               </tr>
-            `).join('')
-          : '<tr><td colspan="3">No files found in storage.</td></tr>';
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        const body = document.getElementById('fileTableBody');
-        body.innerHTML = `<tr><td colspan="3">Unable to load files: ${msg}</td></tr>`;
-      }
-    }
+            </thead>
+            <tbody id="fileTableBody">
+              <tr>
+                <td colspan="4">Loading files…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="file-editor">
+          <label style="color:#cbd5e1;">Selected file</label>
+          <textarea id="fileEditor" placeholder="Select a file from the list to load its content" disabled></textarea>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;"><button id="saveFileButton"
+              disabled>Save file</button><span id="fileInfoText" style="color:#94a3b8; font-size:0.92rem;">No file
+              selected yet.</span></div>
+        </div>
+      </section>
+      <section class="panel" id="connection" style="display:none;">
+        <header>
+          <div>
+            <h2>Connection & certificates</h2>
+            <p>Detailed connection settings and certificate sources for secure transport.</p>
+          </div>
+          <div id="connBadge" class="status-pill">Loading</div>
+        </header>
+        <div class="stats-grid">
+          <div class="metric"><span>Protocol</span><strong id="connProtocol">Loading…</strong></div>
+          <div class="metric"><span>Host</span><strong id="connHost">Loading…</strong></div>
+          <div class="metric"><span>Port</span><strong id="connPort">Loading…</strong></div>
+          <div class="metric"><span>HTTPS</span><strong id="connSsl">Loading…</strong></div>
+          <div class="metric"><span>Root CA</span><strong id="connRoot">Loading…</strong></div>
+          <div class="metric"><span>Client cert verify</span><strong id="connClientCert">Loading…</strong></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <footer class="footer">
+    <span>Storage Server Dashboard</span>
+    <span>Auto-refresh every 12 seconds</span>
+  </footer>
+  
+</body>
+<!-- Script Data -->
+<script>
+  let panels;
+  let buttons;
+  let fileEditor;
+  let saveButton;
+  let refreshButton;
+  let fileBadge;
+  let overviewBadge;
+  let connBadge;
+  let selectedFile = null;
 
+  function initializePage() {
+    panels = {
+      overview: document.getElementById('overview'),
+      files: document.getElementById('files'),
+      connection: document.getElementById('connection'),
+    };
+    buttons = document.querySelectorAll('.nav button');
+    fileEditor = document.getElementById('fileEditor');
+    saveButton = document.getElementById('saveFileButton');
+    refreshButton = document.getElementById('refreshButton');
+    fileBadge = document.getElementById('fileBadge');
+    overviewBadge = document.getElementById('overviewBadge');
+    connBadge = document.getElementById('connBadge');
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => {
+        buttons.forEach((btn) => btn.classList.remove('active'));
+        button.classList.add('active');
+        Object.entries(panels).forEach(([key, panel]) => {
+          panel.style.display = key === button.dataset.section ? 'block' : 'none';
+        });
+      });
+    });
+  }
+
+  function formatBytes(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+  }
+
+  function toLocalString(value) {
+    return new Date(value).toLocaleString();
+  }
+
+  async function loadStatus() {
+    const overviewBadge = document.getElementById('overviewBadge');
+    const connBadge = document.getElementById('connBadge');
+    try {
+      const response = await fetch('/api/status');
+      if (!response.ok) throw new Error(`Status failed ${response.status}`);
+      const status = await response.json();
+
+      document.getElementById('overviewServer').textContent = status.protocol.toUpperCase();
+      document.getElementById('overviewUrl').textContent = window.location.origin;
+      document.getElementById('overviewPort').textContent = status.port;
+      document.getElementById('overviewPath').textContent = status.storageDir;
+      document.getElementById('overviewCount').textContent = status.fileCount;
+      document.getElementById('overviewSize').textContent = formatBytes(status.totalSize);
+      document.getElementById('overviewProtocols').textContent = Object.entries(status.protocols)
+        .filter(([_, enabled]) => enabled)
+        .map(([protocol]) => protocol.toUpperCase())
+        .join(', ');
+
+      document.getElementById('connProtocol').textContent = status.protocol.toUpperCase();
+      document.getElementById('connHost').textContent = status.host;
+      document.getElementById('connPort').textContent = status.port;
+      document.getElementById('connSsl').textContent = status.sslEnabled ? 'Enabled' : 'Disabled';
+      document.getElementById('connRoot').textContent = status.sslCaPath || 'Not configured';
+      document.getElementById('connClientCert').textContent = status.requestClientCert ? 'Required' : 'Optional / disabled';
+
+      overviewBadge.textContent = 'Online';
+      overviewBadge.classList.remove('offline');
+      connBadge.textContent = status.sslEnabled ? 'Secure' : 'Standard';
+      connBadge.classList.remove('offline');
+    } catch (err) {
+      overviewBadge.textContent = 'Offline';
+      overviewBadge.classList.add('offline');
+      connBadge.textContent = 'Offline';
+      connBadge.classList.add('offline');
+    }
+  }
+
+  async function loadFiles() {
+    const body = document.getElementById('fileTableBody');
+    const fileBadge = document.getElementById('fileBadge');
+    try {
+      const response = await fetch('/files');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `Files failed ${response.status}`);
+      }
+
+      const data = await response.json();
+      const files = Array.isArray(data.files) ? data.files : [];
+
+      if (!files.length) {
+        body.innerHTML = '<tr><td colspan="4">No files found</td></tr>';
+        fileBadge.textContent = 'No files';
+        fileBadge.classList.remove('offline');
+        return;
+      }
+
+      body.innerHTML = files.map((file) => `
+          <tr data-filename="${encodeURIComponent(file.filename)}">
+            <td>${file.filename}</td>
+            <td>${formatBytes(file.size)}</td>
+            <td>${toLocalString(file.modified)}</td>
+            <td><a class="file-link" href="/file?name=${encodeURIComponent(file.filename)}" target="_blank" rel="noopener">Download</a></td>
+          </tr>
+        `).join('');
+
+      document.querySelectorAll('#fileTableBody tr').forEach((row) => {
+        row.addEventListener('click', () => selectFile(decodeURIComponent(row.dataset.filename)));
+      });
+
+      fileBadge.textContent = 'Ready';
+      fileBadge.classList.remove('offline');
+    } catch (err) {
+      body.innerHTML = `<tr><td colspan="4">Unable to load files: ${err.message}</td></tr>`;
+      fileBadge.textContent = 'Offline';
+      fileBadge.classList.add('offline');
+    }
+  }
+
+  async function selectFile(filename) {
+    selectedFile = filename;
+    saveButton.disabled = true;
+    fileEditor.disabled = true;
+    fileEditor.value = 'Loading file content...';
+    document.getElementById('fileInfoText').textContent = `Loading ${filename}...`;
+
+    try {
+      const response = await fetch(`${baseUrl}/file/content?name=${encodeURIComponent(filename)}`);
+      if (!response.ok) throw new Error(`Unable to open file: ${response.status}`);
+      const data = await response.json();
+      fileEditor.value = data.content;
+      fileEditor.disabled = false;
+      saveButton.disabled = false;
+      document.getElementById('fileInfoText').textContent = `Editing ${data.filename} • ${formatBytes(data.size)}`;
+    } catch (err) {
+      fileEditor.value = `Error loading file: ${err.message}`;
+      document.getElementById('fileInfoText').textContent = 'Unable to open file';
+    }
+  }
+
+  saveButton.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    saveButton.disabled = true;
+    saveButton.textContent = 'Saving...';
+
+    try {
+      const response = await fetch(`${baseUrl}/file/save?name=${encodeURIComponent(selectedFile)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: fileEditor.value }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `Save failed: ${response.status}`);
+      }
+      const result = await response.json();
+      document.getElementById('fileInfoText').textContent = `Saved ${result.filename} • ${formatBytes(result.size)}`;
+      fileBadge.textContent = 'Saved';
+    } catch (err) {
+      document.getElementById('fileInfoText').textContent = `Save error: ${err.message}`;
+      fileBadge.textContent = 'Save failed';
+      fileBadge.classList.add('offline');
+    } finally {
+      saveButton.disabled = false;
+      saveButton.textContent = 'Save file';
+    }
+  });
+
+  function refresh() {
+    loadStatus();
+    loadFiles();
+  }
+
+  refreshButton.addEventListener('click', refresh);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    initializePage();
     refresh();
     setInterval(refresh, 12000);
-  </script>
-</body>
+  });
+</script>
+
 </html>

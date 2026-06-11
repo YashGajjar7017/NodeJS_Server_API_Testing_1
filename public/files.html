@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Files Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      color: #eef2ff;
+      background: #060616;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 15% 18%, rgba(99,102,241,0.18), transparent 16%),
+                  radial-gradient(circle at 82% 12%, rgba(236,72,153,0.15), transparent 14%),
+                  radial-gradient(circle at 80% 80%, rgba(34,211,238,0.13), transparent 18%),
+                  linear-gradient(180deg, #050816 0%, #090b1a 100%);
+    }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: rgba(226,232,240,0.75);
+      max-width: 640px;
+      line-height: 1.7;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .nav a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      border-radius: 999px;
+      padding: 12px 20px;
+      min-height: 44px;
+      font-weight: 600;
+      color: #eef2ff;
+      background: rgba(15,23,42,0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .nav a.active,
+    .nav a:hover {
+      background: linear-gradient(135deg, rgba(79,70,229,0.95), rgba(236,72,153,0.92));
+      transform: translateY(-1px);
+    }
+
+    .card {
+      background: rgba(15,23,42,0.78);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 28px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 40px 120px rgba(0,0,0,0.28);
+      padding: 26px;
+      margin-bottom: 24px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(79,70,229,0.2);
+      color: #eef2ff;
+      border: 1px solid rgba(79,70,229,0.25);
+      font-size: 0.94rem;
+      font-weight: 600;
+    }
+
+    .status-pill.offline {
+      background: rgba(239,68,68,0.18);
+      border-color: rgba(239,68,68,0.24);
+    }
+
+    .table-shell {
+      overflow-x: auto;
+      margin-bottom: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+
+    th, td {
+      padding: 18px 16px;
+      text-align: left;
+      color: #e5e7eb;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    th {
+      font-size: 0.8rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(203,213,225,0.8);
+    }
+
+    tbody tr:hover { background: rgba(255,255,255,0.06); }
+    tbody tr.selected { background: rgba(79,70,229,0.16); }
+
+    .file-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #7dd3fc;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .file-link:hover { text-decoration: underline; }
+
+    .editor {
+      display: grid;
+      gap: 18px;
+    }
+
+    .upload-panel {
+      display: grid;
+      gap: 14px;
+      margin: 20px 0;
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(15,23,42,0.72);
+      color: #eef2ff;
+      padding: 18px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    button {
+      background: linear-gradient(135deg, rgba(79,70,229,0.95), rgba(236,72,153,0.95));
+      border: none;
+      border-radius: 16px;
+      color: #fff;
+      padding: 14px 24px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 160ms ease, filter 160ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+    .meta {
+      color: rgba(226,232,240,0.76);
+      font-size: 0.94rem;
+    }
+
+    @media (max-width: 900px) {
+      .hero { flex-direction: column; align-items: flex-start; }
+      .table-shell { overflow-x: scroll; }
+      th, td { padding: 14px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div>
+        <h1>Files Manager</h1>
+        <p>Browse storage, edit file content, and download files from your server. Click a row to load the file content in the editor below.</p>
+      </div>
+      <div class="status-pill" id="fileBadge">Loading…</div>
+    </div>
+
+    <nav class="nav">
+      <a href="/dashboard">Overview</a>
+      <a href="/dashboard/files" class="active">Files</a>
+      <a href="/dashboard/connection">Connection</a>
+    </nav>
+
+    <div class="card">
+      <div class="table-shell">
+        <table>
+          <thead>
+            <tr><th>Filename</th><th>Size</th><th>Modified</th><th>Action</th></tr>
+          </thead>
+          <tbody id="fileTableBody">
+            <tr><td colspan="4">Loading files…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="upload-panel">
+        <div class="field">
+          <label for="uploadNameInput">Upload file name</label>
+          <input id="uploadNameInput" type="text" placeholder="Leave empty to use original name" />
+        </div>
+        <div class="field">
+          <label for="uploadFileInput">Choose file</label>
+          <input id="uploadFileInput" type="file" />
+        </div>
+        <div class="actions">
+          <button id="uploadFileButton" type="button">Upload file</button>
+          <button id="refreshFilesButton" type="button">Refresh list</button>
+        </div>
+        <p class="meta" id="uploadNote">Upload a file directly to the storage directory. Existing files are overwritten by default.</p>
+      </div>
+
+      <div class="editor">
+        <label style="color:#cbd5e1;font-weight:600;">Selected file</label>
+        <textarea id="fileEditor" placeholder="Select a file to view its contents" disabled></textarea>
+        <div class="actions">
+          <button id="saveFileButton" disabled>Save file</button>
+          <span id="fileInfoText" class="meta">No file loaded yet.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fileTableBody = document.getElementById('fileTableBody');
+    const fileEditor = document.getElementById('fileEditor');
+    const saveButton = document.getElementById('saveFileButton');
+    const fileInfoText = document.getElementById('fileInfoText');
+    const fileBadge = document.getElementById('fileBadge');
+    const uploadInput = document.getElementById('uploadFileInput');
+    const uploadNameInput = document.getElementById('uploadNameInput');
+    const uploadButton = document.getElementById('uploadFileButton');
+    const refreshFilesButton = document.getElementById('refreshFilesButton');
+    const uploadNote = document.getElementById('uploadNote');
+    let selectedFile = null;
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+    }
+
+    function toLocalString(value) {
+      return new Date(value).toLocaleString();
+    }
+
+    function renderFiles(files) {
+      if (!files.length) {
+        fileTableBody.innerHTML = '<tr><td colspan="4">No files found</td></tr>';
+        return;
+      }
+
+      fileTableBody.innerHTML = files.map((file) => `
+        <tr data-filename="${encodeURIComponent(file.filename)}">
+          <td>${file.filename}</td>
+          <td>${formatBytes(file.size)}</td>
+          <td>${toLocalString(file.modified)}</td>
+          <td><a class="file-link" href="/file?name=${encodeURIComponent(file.filename)}" target="_blank" rel="noopener">Download</a></td>
+        </tr>
+      `).join('');
+
+      document.querySelectorAll('#fileTableBody tr').forEach((row) => {
+        row.addEventListener('click', () => {
+          const filename = decodeURIComponent(row.dataset.filename);
+          selectFile(filename);
+          document.querySelectorAll('#fileTableBody tr').forEach((r) => r.classList.remove('selected'));
+          row.classList.add('selected');
+        });
+      });
+    }
+
+    async function loadFiles() {
+      fileBadge.textContent = 'Loading…';
+      try {
+        const response = await fetch('/files');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.error || `Files failed ${response.status}`);
+        }
+
+        const data = await response.json();
+        const files = Array.isArray(data.files) ? data.files : [];
+        renderFiles(files);
+        fileBadge.textContent = files.length ? 'Ready' : 'No files';
+        fileBadge.classList.remove('offline');
+      } catch (err) {
+        fileTableBody.innerHTML = `<tr><td colspan="4">Unable to load files: ${err.message}</td></tr>`;
+        fileBadge.textContent = 'Offline';
+        fileBadge.classList.add('offline');
+      }
+    }
+
+    async function uploadFile() {
+      const file = uploadInput.files[0];
+      if (!file) {
+        uploadNote.textContent = 'Select a file first to upload.';
+        return;
+      }
+
+      const filename = uploadNameInput.value.trim() || file.name;
+      uploadButton.disabled = true;
+      uploadButton.textContent = 'Uploading…';
+      uploadNote.textContent = `Uploading ${filename}…`;
+
+      try {
+        const response = await fetch(`/file?name=${encodeURIComponent(filename)}`, {
+          method: 'POST',
+          body: file,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.error || `Upload failed ${response.status}`);
+        }
+
+        const data = await response.json();
+        uploadNote.textContent = `Uploaded ${data.filename} (${data.bytes} bytes)`;
+        uploadInput.value = '';
+        uploadNameInput.value = '';
+        await loadFiles();
+      } catch (err) {
+        uploadNote.textContent = `Upload error: ${err.message}`;
+      } finally {
+        uploadButton.disabled = false;
+        uploadButton.textContent = 'Upload file';
+      }
+    }
+
+    refreshFilesButton.addEventListener('click', loadFiles);
+
+    uploadButton.addEventListener('click', uploadFile);
+
+    async function selectFile(filename) {
+      selectedFile = filename;
+      fileEditor.disabled = true;
+      saveButton.disabled = true;
+      fileEditor.value = 'Loading file content...';
+      fileInfoText.textContent = `Loading ${filename}...`;
+
+      try {
+        const response = await fetch(`/file/content?name=${encodeURIComponent(filename)}`);
+        if (!response.ok) throw new Error(`Unable to open file: ${response.status}`);
+        const data = await response.json();
+        fileEditor.value = data.content;
+        fileEditor.disabled = false;
+        saveButton.disabled = false;
+        fileInfoText.textContent = `Editing ${data.filename} • ${formatBytes(data.size)}`;
+      } catch (err) {
+        fileEditor.value = `Error loading file: ${err.message}`;
+        fileInfoText.textContent = 'Unable to open file';
+      }
+    }
+
+    saveButton.addEventListener('click', async () => {
+      if (!selectedFile) return;
+      saveButton.disabled = true;
+      saveButton.textContent = 'Saving...';
+
+      try {
+        const response = await fetch(`/file/save?name=${encodeURIComponent(selectedFile)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: fileEditor.value }),
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.error || `Save failed ${response.status}`);
+        }
+        const data = await response.json();
+        fileInfoText.textContent = `Saved ${data.filename} • ${formatBytes(data.size)}`;
+      } catch (err) {
+        fileInfoText.textContent = `Save error: ${err.message}`;
+      } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = 'Save file';
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadFiles();
+    });
+  </script>
+</body>
+</html>
